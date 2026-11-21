@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAHDD ADMIN | Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root { 
+            --bg-color: #080808; 
+            --primary: #00f3ff; 
+            --danger: #ef4444; 
+            --success: #10b981; 
+            --glass: rgba(255,255,255,0.03); 
+            --border: rgba(0, 243, 255, 0.2);
+            --text-main: #ffffff;
+            --text-muted: #888;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Rajdhani', sans-serif; }
+        body { 
+            background-color: var(--bg-color); color: var(--text-main); padding: 20px; 
+            background-image: linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px; min-height: 100vh;
+        }
+
+        /* HEADER */
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
+        .logo { font-size: 24px; font-weight: 700; letter-spacing: 3px; color: var(--primary); text-transform: uppercase; text-shadow: 0 0 10px rgba(0,243,255,0.5);}
+        
+        .controls { display: flex; gap: 10px; align-items: center; }
+        .btn-toggle { background: rgba(255,255,255,0.1); color: white; border: 1px solid #333; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.3s; }
+        .btn-toggle.active { background: var(--success); color: #000; border-color: var(--success); box-shadow: 0 0 10px var(--success); }
+
+        /* STATS & CHART */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: var(--glass); border: 1px solid #333; border-left: 4px solid var(--primary); padding: 15px; }
+        .stat-card h3 { font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; font-family: 'Share Tech Mono', monospace;}
+        .stat-card p { font-size: 28px; font-weight: 700; color: #fff; font-family: 'Share Tech Mono', monospace;}
+        .stat-card.money { border-left-color: var(--success); }
+        .stat-card.money p { color: var(--success); }
+
+        /* CHART CSS SAHAJA */
+        .chart-container { background: var(--glass); border: 1px solid #333; padding: 15px; margin-bottom: 20px; display: flex; align-items: flex-end; justify-content: space-between; height: 120px; gap: 5px; }
+        .bar { flex: 1; background: var(--primary); border-radius: 3px 3px 0 0; position: relative; opacity: 0.7; transition: 0.3s; }
+        .bar:hover { opacity: 1; box-shadow: 0 0 10px var(--primary); }
+        .bar-label { position: absolute; bottom: -20px; left: 0; width: 100%; text-align: center; font-size: 10px; color: var(--text-muted); }
+
+        /* CARIAN & FILTER */
+        .search-filter { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-filter input { flex: 1; min-width: 200px; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 5px; font-family: 'Rajdhani'; font-size: 14px; }
+        .filter-btns { display: flex; gap: 5px; }
+        .filter-btn { background: #111; border: 1px solid #333; color: white; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .filter-btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
+
+        /* KAD PESANAN */
+        .orders-title { font-size: 16px; margin-bottom: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); border-left: 3px solid var(--primary); padding-left: 10px; }
+        .order-card { background: #111; border: 1px solid #333; padding: 20px; margin-bottom: 15px; position: relative; font-family: 'Share Tech Mono', monospace; }
+        .order-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--primary); opacity: 0.5;}
+        
+        .order-header { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px dashed #333; padding-bottom: 10px; }
+        .order-game { font-weight: 700; color: var(--primary); font-size: 16px; text-transform: uppercase;}
+        .order-time { font-size: 12px; color: #666; }
+        
+        .order-details p { font-size: 14px; color: #ccc; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
+        .order-details strong { color: #fff; }
+        .order-price { font-size: 20px; font-weight: 700; color: var(--success); margin-top: 15px; display: block; }
+        
+        .btn-copy { background: #333; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 10px; cursor: pointer; margin-left: 10px; }
+        .btn-copy:active { background: var(--primary); color: #000; }
+
+        .action-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { flex: 1; padding: 12px; border: none; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px; font-family: 'Rajdhani'; }
+        .btn-approve { background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success); }
+        .btn-approve:hover { background: var(--success); color: #000; }
+        .btn-reject { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); }
+        .btn-reject:hover { background: var(--danger); color: #fff; }
+        .btn-edit { background: rgba(0, 243, 255, 0.1); border: 1px solid var(--primary); color: var(--primary); }
+        .btn-edit:hover { background: var(--primary); color: #000; }
+        
+        .status-badge { position: absolute; top: 20px; right: 20px; font-size: 11px; padding: 4px 10px; font-weight: 700; letter-spacing: 1px; border: 1px solid; }
+        .status-pending { color: orange; border-color: orange; background: rgba(255,165,0,0.1); }
+        .status-success { color: var(--success); border-color: var(--success); background: rgba(16,185,129,0.1); }
+        .status-failed { color: var(--danger); border-color: var(--danger); background: rgba(239,68,68,0.1); }
+
+        /* ADMIN LOG */
+        .admin-log { margin-top: 40px; border-top: 1px dashed #333; padding-top: 20px; }
+        .admin-log h3 { font-size: 14px; color: var(--text-muted); margin-bottom: 10px; font-family: 'Share Tech Mono'; }
+        .log-item { font-size: 12px; color: #888; margin-bottom: 5px; font-family: 'Share Tech Mono'; }
+        
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">YAHDD SYSTEM</div>
+        <div class="controls">
+            <button class="btn-toggle" id="btnAutoRefresh" onclick="toggleAutoRefresh()">🔄 Auto-Refresh: OFF</button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Data</h3>
+            <p id="statTotal">0</p>
+        </div>
+        <div class="stat-card money">
+            <h3>Total Revenue</h3>
+            <p id="statUntung">0.00</p>
+        </div>
+    </div>
+
+    <!-- GRAFIK UNTUNG (MOCKUP) -->
+    <div class="chart-container">
+        <div class="bar" style="height: 40%;"><div class="bar-label">Is</div></div>
+        <div class="bar" style="height: 60%;"><div class="bar-label">Se</div></div>
+        <div class="bar" style="height: 30%;"><div class="bar-label">Ra</div></div>
+        <div class="bar" style="height: 80%;"><div class="bar-label">Ka</div></div>
+        <div class="bar" style="height: 50%;"><div class="bar-label">Ju</div></div>
+        <div class="bar" style="height: 90%;"><div class="bar-label">Sa</div></div>
+        <div class="bar" style="height: 100%;"><div class="bar-label">Ah</div></div>
+    </div>
+
+    <!-- CARIAN & FILTER -->
+    <div class="search-filter">
+        <input type="text" id="searchInput" placeholder="🔍 Cari Game / ID / Ref..." onkeyup="filterOrders()">
+        <div class="filter-btns">
+            <button class="filter-btn active" onclick="setFilter('all', this)">Semua</button>
+            <button class="filter-btn" onclick="setFilter('pending', this)">Tertunggak</button>
+            <button class="filter-btn" onclick="setFilter('success', this)">Berjaya</button>
+        </div>
+    </div>
+
+    <div class="orders-title">Live Transaction Log</div>
+    <div id="ordersContainer"></div>
+
+    <div class="admin-log">
+        <h3>> ADMIN ACTION LOG</h3>
+        <div id="logContainer"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://spxidzfqjgpifvutqjlx.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_plobSMHs6jmvbWomZdh06w_JwTxVfql";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let allOrders = []; // Simpan semua data asal
+        let currentFilter = 'all';
+        let autoRefreshInterval = null;
+
+        // --- AUTO REFRESH ---
+        function toggleAutoRefresh() {
+            const btn = document.getElementById('btnAutoRefresh');
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                btn.classList.remove('active');
+                btn.innerText = "🔄 Auto-Refresh: OFF";
+            } else {
+                autoRefreshInterval = setInterval(loadOrders, 5000); // 5 saat
+                btn.classList.add('active');
+                btn.innerText = "🔄 Auto-Refresh: ON";
+            }
+        }
+
+        // --- CARI & FILTER ---
+        function setFilter(type, btn) {
+            currentFilter = type;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterOrders();
+        }
+
+        function filterOrders() {
+            let searchTxt = document.getElementById('searchInput').value.toLowerCase();
+            let filtered = allOrders.filter(order => {
+                let matchSearch = order.game.toLowerCase().includes(searchTxt) || 
+                                  order.player_id.toLowerCase().includes(searchTxt) || 
+                                  order.ref_no.toLowerCase().includes(searchTxt);
+                
+                let matchFilter = (currentFilter === 'all') || (order.status === currentFilter);
+                
+                return matchSearch && matchFilter;
+            });
+            renderOrders(filtered);
+        }
+
+        // --- LOAD DATA ---
+        async function loadOrders() {
+            let container = document.getElementById('ordersContainer');
+            if(allOrders.length === 0) container.innerHTML = "<p style='color:var(--primary); font-family:Share Tech Mono;'>Establishing connection...</p>";
+            
+            const { data: history, error } = await supabaseClient
+                .from('orders').select('*').order('created_at', { ascending: false });
+
+            if (error) { container.innerHTML = "<p style='color:red;'>CONNECTION FAILED.</p>"; return; }
+
+            allOrders = history || [];
+            filterOrders(); // Apply filter & render
+            updateStats();
+        }
+
+        function updateStats() {
+            let totalPesanan = allOrders.length;
+            let totalUntung = 0;
+            allOrders.forEach(order => {
+                if (order.status !== 'failed') totalUntung += (order.harga / 100);
+            });
+            document.getElementById('statTotal').innerText = totalPesanan;
+            document.getElementById('statUntung').innerText = totalUntung.toFixed(2);
+        }
+
+        // --- RENDER KAD ---
+        function renderOrders(orders) {
+            let container = document.getElementById('ordersContainer');
+            container.innerHTML = "";
+
+            if (orders.length === 0) {
+                container.innerHTML = `<div style="padding:30px; color:#666; text-align:center; border:1px dashed #333;">TIADA DATA DITEMUI.</div>`;
+                return;
+            }
+
+            orders.forEach((order) => {
+                let status = order.status || 'pending';
+                let statusClass = status === 'pending' ? 'status-pending' : (status === 'success' ? 'status-success' : 'status-failed');
+                let statusText = status === 'pending' ? 'PENDING' : (status === 'success' ? 'SUCCESS' : 'REJECTED');
+
+                let card = document.createElement('div');
+                card.className = 'order-card';
+                
+                let actionHTML = "";
+                if (status === 'pending') {
+                    actionHTML = `
+                        <div class="action-btns">
+                            <button class="btn btn-approve" onclick="prosesPesanan('${order.id}', '${order.game}', 'success')">EXECUTE</button>
+                            <button class="btn btn-reject" onclick="prosesPesanan('${order.id}', '${order.game}', 'failed')">ABORT</button>
+                            <button class="btn btn-edit" onclick="editHarga('${order.id}', ${order.harga})">EDIT</button>
+                        </div>
+                    `;
+                }
+
+                let tarikh = new Date(order.created_at).toLocaleString('ms-MY');
+
+                card.innerHTML = `
+                    <div class="status-badge ${statusClass}">${statusText}</div>
+                    <div class="order-header">
+                        <div class="order-game">> ${order.game}</div>
+                        <div class="order-time">${tarikh}</div>
+                    </div>
+                    <div class="order-details">
+                        <p>Target ID: <strong>${order.player_id} <button class="btn-copy" onclick="salinText('${order.player_id}')">📋 Salin</button></strong></p>
+                        <p>Package: <strong>${order.pakej}</strong></p>
+                        <p>Ref ID: <strong>${order.ref_no} <button class="btn-copy" onclick="salinText('${order.ref_no}')">📋 Salin</button></strong></p>
+                        <span class="order-price">RM ${(order.harga / 100).toFixed(2)}</span>
+                    </div>
+                    ${actionHTML}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- FUNGSI SALIN ---
+        function salinText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Disalin: " + text);
+            });
+        }
+
+        // --- EDIT HARGA ---
+        async function editHarga(orderId, currentPrice) {
+            let newPriceStr = prompt("Masukkan harga baru (dalam sen, cth: 500 = RM5):", currentPrice);
+            if (newPriceStr === null) return;
+            let newPrice = parseInt(newPriceStr);
+            if (isNaN(newPrice) || newPrice < 0) return alert("Sila masukkan nombor yang sah.");
+
+            const { error } = await supabaseClient.from('orders').update({ harga: newPrice }).eq('id', orderId);
+            if (error) alert("Gagal update.");
+            else {
+                catatLog(`Edit harga Ref ${orderId} kepada RM${(newPrice/100).toFixed(2)}`);
+                loadOrders();
+            }
+        }
+
+        // --- PROSES PESANAN & ADMIN LOG ---
+        async function prosesPesanan(orderId, gameName, newStatus) {
+            const { error } = await supabaseClient.from('orders').update({ status: newStatus }).eq('id', orderId);
+            if (error) { alert("SYSTEM ERROR: Update failed."); return; }
+            
+            catatLog(`${newStatus === 'success' ? 'Luluskan' : 'Tolak'} pesanan ${gameName} (ID: ${orderId})`);
+            loadOrders();
+        }
+
+        function catatLog(action) {
+            let logs = JSON.parse(localStorage.getItem('yahddAdminLog')) || [];
+            logs.unshift(`[${new Date().toLocaleTimeString('ms-MY')}] ${action}`);
+            if(logs.length > 10) logs.pop(); // Simpan 10 terkini sahaja
+            localStorage.setItem('yahddAdminLog', JSON.stringify(logs));
+            renderLog();
+        }
+
+        function renderLog() {
+            let logs = JSON.parse(localStorage.getItem('yahddAdminLog')) || [];
+            let container = document.getElementById('logContainer');
+            container.innerHTML = logs.length ? logs.map(l => `<div class="log-item">${l}</div>`).join('') : "<div class='log-item'>Tiada tindakan lagi.</div>";
+        }
+
+        // INIT
+        loadOrders();
+        renderLog();
+    </script>
+</body>
+  </html>
