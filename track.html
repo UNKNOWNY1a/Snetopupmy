@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAHDD STORE | Track Order</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --bg: #050505; --primary: #00f3ff; --glass: rgba(255,255,255,0.05); --border: rgba(0, 243, 255, 0.3); --success: #10b981; --danger: #ef4444; --text-main: #fff; --text-muted: #888; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Rajdhani', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); background-image: radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.05) 0%, transparent 70%); display: flex; flex-direction: column; align-items: center; padding: 40px 20px; min-height: 100vh; }
+        
+        .logo-nav { font-size: 28px; font-weight: 700; letter-spacing: 4px; color: var(--primary); margin-bottom: 30px; cursor: pointer; text-transform: uppercase; text-shadow: 0 0 20px rgba(0,243,255,0.5); }
+        
+        .container { width: 100%; max-width: 500px; background: var(--glass); border: 1px solid var(--border); border-radius: 10px; padding: 30px; box-shadow: 0 0 40px rgba(0, 243, 255, 0.1); backdrop-filter: blur(10px); position: relative; overflow: hidden; }
+        .container::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--primary); box-shadow: 0 0 15px var(--primary); }
+        
+        h2 { font-size: 24px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; text-align: center; font-weight: 700;}
+        p.sub { font-size: 14px; color: var(--text-muted); text-align: center; margin-bottom: 25px; font-family: 'Share Tech Mono', monospace;}
+        
+        /* SEARCH BAR & DROPDOWN */
+        .search-type { display: flex; gap: 10px; margin-bottom: 10px; }
+        .search-type select { background: rgba(0,0,0,0.5); border: 1px solid #333; color: var(--primary); padding: 10px; border-radius: 5px; font-family: 'Rajdhani'; font-size: 14px; outline: none; flex: 1; }
+        
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        input { flex: 1; padding: 15px; background: rgba(0,0,0,0.5); border: 1px solid #333; border-radius: 5px; color: var(--primary); font-family: 'Share Tech Mono', monospace; outline: none; font-size: 16px; transition: 0.3s; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); }
+        
+        button.search-btn { background: var(--primary); color: #000; font-weight: 700; border: none; padding: 0 25px; border-radius: 5px; cursor: pointer; box-shadow: 0 0 15px rgba(0, 243, 255, 0.4); text-transform: uppercase; letter-spacing: 1px; transition: 0.3s;}
+        button.search-btn:active { transform: scale(0.95); }
+        
+        /* SCANNING ANIMATION */
+        #scanning { display: none; text-align: center; margin: 20px 0; color: var(--primary); font-family: 'Share Tech Mono'; font-size: 14px; }
+        .radar { width: 50px; height: 50px; border: 2px solid transparent; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px auto; }
+        
+        /* RECENT SEARCHES */
+        .recent-search { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 20px; }
+        .recent-item { background: #222; color: var(--text-muted); padding: 5px 10px; border-radius: 15px; font-size: 12px; cursor: pointer; border: 1px solid #333; }
+        .recent-item:hover { color: var(--primary); border-color: var(--primary); }
+
+        /* STATUS CONTAINER */
+        .status-container { display: none; margin-top: 20px; animation: fadeIn 0.5s ease; }
+        .order-info { background: #111; border: 1px solid #333; border-radius: 5px; padding: 20px; margin-bottom: 25px; font-family: 'Share Tech Mono', monospace;}
+        .order-info p { font-size: 14px; display: flex; justify-content: space-between; margin-bottom: 10px; color: #aaa; border-bottom: 1px dashed #222; padding-bottom: 5px;}
+        .order-info p span { font-weight: 700; color: var(--primary); }
+
+        /* BUTTONS SHARE/COPY */
+        .action-btns { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn-act { flex: 1; padding: 10px; border: 1px solid var(--border); background: rgba(0,0,0,0.5); color: var(--primary); border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 12px; text-transform: uppercase; }
+        .btn-act:hover { background: var(--primary); color: #000; }
+
+        /* PROGRESS BAR */
+        .progress-container { background: #111; height: 10px; border-radius: 5px; margin-bottom: 25px; overflow: hidden; border: 1px solid #333;}
+        .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 1s ease-in-out; box-shadow: 0 0 10px var(--primary);}
+
+        /* TIMELINE */
+        .timeline { position: relative; padding-left: 40px; margin-bottom: 30px; }
+        .timeline::before { content: ''; position: absolute; left: 14px; top: 0; bottom: 0; width: 2px; background: #333; }
+        .step { position: relative; margin-bottom: 30px; }
+        .step:last-child { margin-bottom: 0; }
+        .dot { position: absolute; left: -40px; width: 30px; height: 30px; background: #111; border: 2px solid #555; display: flex; justify-content: center; align-items: center; font-size: 14px; color: #555; transition: 0.3s; border-radius: 50%;}
+        .step.done .dot { background: var(--success); border-color: var(--success); color: #000; box-shadow: 0 0 15px var(--success); }
+        .step.fail .dot { background: var(--danger); border-color: var(--danger); color: #fff; box-shadow: 0 0 15px var(--danger); }
+        
+        .step-text h4 { font-size: 16px; margin-bottom: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;}
+        .step-text p { font-size: 12px; color: var(--text-muted); font-family: 'Share Tech Mono', monospace;}
+        .step-text .timestamp { font-size: 10px; color: #555; margin-top: 3px; display: block;}
+
+        /* FAILED CONTACT ADMIN */
+        #contactAdminBtn { display: none; width: 100%; background: var(--danger); color: white; padding: 15px; border: none; border-radius: 5px; font-weight: bold; font-size: 16px; margin-top: 20px; cursor: pointer; box-shadow: 0 0 15px rgba(239,68,68,0.5); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="logo-nav" onclick="window.location.href='store.html'">YAHDD STORE</div>
+    
+    <div class="container">
+        <h2>Order Tracker</h2>
+        <p class="sub">Enter Reference ID or Player ID</p>
+        
+        <!-- SEARCH TYPE & INPUT -->
+        <div class="search-type">
+            <select id="searchType">
+                <option value="ref_no">Cari ikut Ref No (YH-XXXX)</option>
+                <option value="player_id">Cari ikut ID Pemain</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="searchInput" placeholder="Masukkan carian...">
+            <button class="search-btn" onclick="cariPesanan()">TRACE</button>
+        </div>
+
+        <!-- RECENT SEARCHES -->
+        <div class="recent-search" id="recentSearches"></div>
+
+        <!-- SCANNING LOADER -->
+        <div id="scanning">
+            <div class="radar"></div>
+            SCANNING DATABASE...
+        </div>
+
+        <!-- RESULTS -->
+        <div class="status-container" id="statusContainer">
+            <div class="order-info">
+                <p>TARGET GAME: <span id="trackGame"></span></p>
+                <p>PACKAGE: <span id="trackPakej"></span></p>
+                <p>PLAYER ID: <span id="trackId"></span></p>
+                <p>STATUS: <span id="trackStatus"></span></p>
+            </div>
+            
+            <div class="action-btns">
+                <button class="btn-act" onclick="salinRef()">📋 Salin Ref No</button>
+                <button class="btn-act" onclick="kongsiResit()">📤 Kongsi</button>
+            </div>
+
+            <!-- PROGRESS BAR -->
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <!-- TIMELINE -->
+            <div class="timeline">
+                <div class="step done" id="step1">
+                    <div class="dot">✓</div>
+                    <div class="step-text">
+                        <h4>Pesanan Diterima</h4>
+                        <p>Order logged in main server.</p>
+                        <span class="timestamp" id="timeStep1"></span>
+                    </div>
+                </div>
+                <div class="step" id="step2">
+                    <div class="dot"></div>
+                    <div class="step-text">
+                        <h4>Pengesahan Pembayaran</h4>
+                        <p id="textStep2">Awaiting admin approval...</p>
+                        <span class="timestamp" id="timeStep2"></span>
+                    </div>
+                </div>
+                <div class="step" id="step3">
+                    <div class="dot"></div>
+                    <div class="step-text">
+                        <h4>Proses Topup</h4>
+                        <p>Item injection in progress.</p>
+                        <span class="timestamp" id="timeStep3"></span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="contactAdminBtn" onclick="hubungiAdmin()">⚠️ HUBUNGI ADMIN</button>
+        </div>
+        <div id="errorMsg" style="display:none; text-align:center; color:var(--danger); font-size:14px; margin-top:20px; font-family:'Share Tech Mono';">> ERROR: DATA NOT FOUND.</div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://spxidzfqjgpifvutqjlx.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_plobSMHs6jmvbWomZdh06w_JwTxVfql";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentRefNo = "";
+
+        // LOAD SEJARAH CARIAN DARI LOCALSTORAGE
+        function loadRecentSearches() {
+            let recents = JSON.parse(localStorage.getItem('yahddRecentSearch')) || [];
+            let container = document.getElementById('recentSearches');
+            container.innerHTML = "";
+            recents.forEach(ref => {
+                let span = document.createElement('span');
+                span.className = 'recent-item';
+                span.innerText = ref;
+                span.onclick = () => {
+                    document.getElementById('searchInput').value = ref;
+                    document.getElementById('searchType').value = 'ref_no';
+                    cariPesanan();
+                };
+                container.appendChild(span);
+            });
+        }
+
+        function saveRecentSearch(ref) {
+            let recents = JSON.parse(localStorage.getItem('yahddRecentSearch')) || [];
+            if (!recents.includes(ref)) {
+                recents.unshift(ref);
+                if (recents.length > 5) recents.pop(); // Simpan 5 terkini
+                localStorage.setItem('yahddRecentSearch', JSON.stringify(recents));
+                loadRecentSearches();
+            }
+        }
+
+        // CARI PESANAN
+        async function cariPesanan() {
+            let inputVal = document.getElementById('searchInput').value.trim();
+            let searchType = document.getElementById('searchType').value;
+            if (!inputVal) return alert("Masukkan carian!");
+
+            let container = document.getElementById('statusContainer');
+            let errorMsg = document.getElementById('errorMsg');
+            let scanning = document.getElementById('scanning');
+
+            container.style.display = 'none';
+            errorMsg.style.display = 'none';
+            scanning.style.display = 'block';
+
+            // Simulasi Scanning
+            await new Promise(r => setTimeout(r, 800));
+
+            let query = supabaseClient.from('orders').select('*');
+            if (searchType === 'ref_no') {
+                query = query.eq('ref_no', inputVal.toUpperCase());
+            } else {
+                query = query.eq('player_id', inputVal);
+            }
+
+            const { data: pesanan, error } = await query.limit(1).single();
+
+            scanning.style.display = 'none';
+
+            if (pesanan) {
+                container.style.display = 'block';
+                currentRefNo = pesanan.ref_no;
+                
+                if (searchType === 'ref_no') saveRecentSearch(pesanan.ref_no);
+
+                document.getElementById('trackGame').innerText = pesanan.game;
+                document.getElementById('trackPakej').innerText = pesanan.pakej;
+                document.getElementById('trackId').innerText = pesanan.player_id;
+                
+                // Status dan Progress Bar
+                let progressBar = document.getElementById('progressBar');
+                let contactBtn = document.getElementById('contactAdminBtn');
+                let statusText = "";
+
+                if (pesanan.status === 'pending') {
+                    statusText = "TERTUNGGU";
+                    progressBar.style.width = "33%";
+                    document.getElementById('textStep2').innerText = 'Menunggu pengesahan...';
+                    contactBtn.style.display = 'none';
+                } else if (pesanan.status === 'success') {
+                    statusText = "BERJAYA";
+                    progressBar.style.width = "100%";
+                    document.getElementById('step2').className = 'step done';
+                    document.getElementById('step2').querySelector('.dot').innerText = '✓';
+                    document.getElementById('textStep2').innerText = 'Pembayaran disahkan.';
+                    document.getElementById('step3').className = 'step done';
+                    document.getElementById('step3').querySelector('.dot').innerText = '✓';
+                    document.getElementById('timeStep2').innerText = new Date().toLocaleString('ms-MY');
+                    document.getElementById('timeStep3').innerText = new Date().toLocaleString('ms-MY');
+                    contactBtn.style.display = 'none';
+                } else if (pesanan.status === 'failed') {
+                    statusText = "GAGAL/DITOLAK";
+                    progressBar.style.width = "100%";
+                    progressBar.style.background = "var(--danger)";
+                    progressBar.style.boxShadow = "0 0 10px var(--danger)";
+                    document.getElementById('step2').className = 'step fail';
+                    document.getElementById('step2').querySelector('.dot').innerText = '✗';
+                    document.getElementById('textStep2').innerText = 'Pesanan dibatalkan.';
+                    document.getElementById('step3').style.opacity = "0.3";
+                    document.getElementById('timeStep2').innerText = new Date().toLocaleString('ms-MY');
+                    contactBtn.style.display = 'block';
+                }
+
+                document.getElementById('trackStatus').innerText = statusText;
+                document.getElementById('timeStep1').innerText = new Date(pesanan.created_at).toLocaleString('ms-MY');
+                
+            } else {
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        function salinRef() {
+            if(currentRefNo) {
+                navigator.clipboard.writeText(currentRefNo).then(() => alert("Ref No disalin: " + currentRefNo));
+            }
+        }
+
+        function kongsiResit() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'YAHDD STORE - Track Pesanan',
+                    text: `Status pesanan saya (Ref: ${currentRefNo}) di YAHDD STORE.`,
+                    url: window.location.href
+                }).catch(console.error);
+            } else {
+                alert("Browser ini tidak menyokong fungsi 'Share'. Sila salin link secara manual.");
+            }
+        }
+
+        function hubungiAdmin() {
+            let msg = encodeURIComponent(`Hi Admin, saya nak tanya pasal pesanan saya yang gagal. Ref No: ${currentRefNo}`);
+            window.open(`https://wa.me/601128727879?text=${msg}`, '_blank'); // TUKAR NOMBOR TELEFON ANDA
+        }
+
+        // INIT
+        loadRecentSearches();
+    </script>
+</body>
+  </html>
