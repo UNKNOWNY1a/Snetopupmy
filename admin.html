@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#050000">
+    <title>YAHDD ADMIN | God Tier Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            --bg: #050000; --primary: #ff0033; --secondary: #ff5500;
+            --card: rgba(20, 0, 0, 0.85); --border: rgba(255, 0, 51, 0.3);
+            --text: #ffffff; --muted: #a0a0a0; --input: #0a0000;
+            --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --info: #3b82f6;
+            --glow: 0 0 15px rgba(255, 0, 51, 0.6);
+            --font-h: 'Orbitron', sans-serif; --font-b: 'Rajdhani', sans-serif; --font-m: 'Share Tech Mono', monospace;
+            --radius: 8px; --transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* BASE */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-b); -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); overflow-x: hidden; padding: 20px; background-image: linear-gradient(rgba(255, 0, 51, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 51, 0.03) 1px, transparent 1px); background-size: 30px 30px; }
+        a { text-decoration: none; color: inherit; }
+        button { cursor: pointer; border: none; outline: none; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+
+        /* ANIMATIONS */
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        @keyframes typing { from { width: 0; } to { width: 100%; } }
+        @keyframes glitch { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } }
+        @keyframes glitch-1 { 0% { clip-path: inset(20% 0 80% 0); } 20% { clip-path: inset(60% 0 10% 0); } 40% { clip-path: inset(40% 0 50% 0); } 60% { clip-path: inset(80% 0 5% 0); } 80% { clip-path: inset(10% 0 70% 0); } 100% { clip-path: inset(30% 0 50% 0); } }
+        @keyframes glitch-2 { 0% { clip-path: inset(10% 0 60% 0); } 20% { clip-path: inset(30% 0 20% 0); } 40% { clip-path: inset(70% 0 10% 0); } 60% { clip-path: inset(20% 0 50% 0); } 80% { clip-path: inset(50% 0 30% 0); } 100% { clip-path: inset(5% 0 80% 0); } }
+
+        /* HEADER */
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; animation: fadeIn 1s ease; }
+        .logo-area { display: flex; flex-direction: column; }
+        .logo { font-family: var(--font-h); font-size: 24px; font-weight: 900; color: var(--primary); text-shadow: var(--glow); letter-spacing: 2px; }
+        .subtitle { font-size: 10px; color: var(--muted); font-family: var(--font-m); letter-spacing: 1px; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .admin-badge { background: var(--danger); color: white; font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-family: var(--font-h); animation: pulse 2s infinite; }
+        
+        /* STATS GRID */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 25px; animation: fadeIn 1.2s ease; }
+        .stat-card { background: var(--card); border: 1px solid #333; border-left: 4px solid var(--primary); padding: 15px; position: relative; overflow: hidden; transition: var(--transition); }
+        .stat-card:hover { border-color: var(--primary); box-shadow: var(--glow); transform: translateY(-3px); }
+        .stat-card::after { content: ''; position: absolute; top: 0; right: 0; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,0,51,0.05)); pointer-events: none; }
+        .stat-card h3 { font-size: 11px; color: var(--muted); font-family: var(--font-m); text-transform: uppercase; margin-bottom: 5px; }
+        .stat-card p { font-size: 24px; font-weight: 900; color: #fff; font-family: var(--font-h); text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        .stat-card.money { border-left-color: var(--success); } .stat-card.money p { color: var(--success); }
+        .stat-card.warning { border-left-color: var(--warning); } .stat-card.warning p { color: var(--warning); }
+        .stat-card.info { border-left-color: var(--info); } .stat-card.info p { color: var(--info); }
+
+        /* CHART MOCKUP */
+        .chart-container { background: var(--card); border: 1px solid #333; padding: 15px; margin-bottom: 25px; height: 150px; display: flex; align-items: flex-end; justify-content: space-around; gap: 5px; animation: fadeIn 1.4s ease; }
+        .bar { width: 100%; background: linear-gradient(to top, var(--primary), #ff5500); border-radius: 3px 3px 0 0; position: relative; opacity: 0.7; transition: height 1s ease; }
+        .bar:hover { opacity: 1; box-shadow: 0 0 15px var(--primary); }
+        .bar-label { position: absolute; bottom: -20px; left: 0; width: 100%; text-align: center; font-size: 10px; color: var(--muted); font-family: var(--font-m); }
+
+        /* FILTER & SEARCH */
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; animation: fadeIn 1.6s ease; }
+        .search-box { flex: 1; min-width: 200px; position: relative; }
+        .search-box input { width: 100%; padding: 12px 15px; background: var(--input); border: 1px solid #333; border-radius: var(--radius); color: var(--primary); font-family: var(--font-m); font-size: 13px; outline: none; transition: 0.3s; }
+        .search-box input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(255,0,51,0.2); }
+        .filter-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+        .filter-btn { background: #111; border: 1px solid #333; color: var(--muted); padding: 8px 15px; border-radius: var(--radius); font-size: 11px; font-weight: bold; font-family: var(--font-b); text-transform: uppercase; transition: 0.2s; }
+        .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .filter-btn.active { background: var(--primary); color: #000; border-color: var(--primary); box-shadow: var(--glow); }
+
+        /* ORDER LIST */
+        .orders-title { font-size: 16px; font-weight: 700; font-family: var(--font-h); color: var(--primary); margin-bottom: 15px; border-left: 4px solid var(--primary); padding-left: 10px; text-transform: uppercase; letter-spacing: 1px; animation: fadeIn 1.8s ease; }
+        .order-list { display: flex; flex-direction: column; gap: 15px; animation: fadeIn 2s ease; }
+        
+        .order-card { background: var(--card); border: 1px solid #333; border-radius: var(--radius); padding: 20px; position: relative; transition: var(--transition); }
+        .order-card:hover { border-color: var(--primary); box-shadow: 0 5px 20px rgba(255,0,51,0.1); transform: translateY(-2px); }
+        .order-card.pending { border-left: 4px solid var(--warning); }
+        .order-card.success { border-left: 4px solid var(--success); opacity: 0.8; }
+        .order-card.failed { border-left: 4px solid var(--danger); opacity: 0.6; }
+
+        .order-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #333; padding-bottom: 10px; margin-bottom: 15px; }
+        .order-game { font-family: var(--font-h); font-size: 16px; font-weight: 700; color: var(--primary); }
+        .order-time { font-size: 11px; color: var(--muted); font-family: var(--font-m); }
+        .status-badge { position: absolute; top: 15px; right: 15px; font-size: 10px; font-family: var(--font-h); font-weight: bold; padding: 4px 10px; border-radius: 4px; border: 1px solid; }
+        .status-pending { color: var(--warning); border-color: var(--warning); background: rgba(245, 158, 11, 0.1); animation: pulse 2s infinite; }
+        .status-success { color: var(--success); border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
+        .status-failed { color: var(--danger); border-color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+
+        .order-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .detail-item { display: flex; flex-direction: column; }
+        .detail-label { font-size: 10px; color: var(--muted); text-transform: uppercase; font-family: var(--font-m); }
+        .detail-value { font-size: 14px; font-weight: 600; color: #fff; font-family: var(--font-m); display: flex; align-items: center; gap: 5px; }
+        .copy-btn { background: #222; border: 1px solid #444; color: #ccc; padding: 2px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; transition: 0.2s; }
+        .copy-btn:active { background: var(--primary); color: #000; }
+        .order-price { font-size: 20px; font-weight: 900; color: var(--success); font-family: var(--font-h); grid-column: span 2; margin-top: 5px; }
+
+        .order-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-action { flex: 1; padding: 12px; border-radius: var(--radius); font-family: var(--font-h); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; }
+        .btn-approve { background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success); }
+        .btn-approve:hover { background: var(--success); color: #000; box-shadow: 0 0 15px rgba(16,185,129,0.4); }
+        .btn-reject { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); }
+        .btn-reject:hover { background: var(--danger); color: #fff; box-shadow: 0 0 15px rgba(239,68,68,0.4); }
+        .btn-edit { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--info); color: var(--info); }
+        .btn-edit:hover { background: var(--info); color: #fff; box-shadow: 0 0 15px rgba(59,130,246,0.4); }
+
+        /* ADMIN LOG */
+        .admin-log { margin-top: 40px; border-top: 1px dashed #333; padding-top: 20px; animation: fadeIn 2.2s ease; }
+        .admin-log h3 { font-size: 14px; color: var(--muted); font-family: var(--font-m); margin-bottom: 10px; }
+        .log-item { font-size: 12px; color: var(--muted); font-family: var(--font-m); margin-bottom: 5px; border-left: 2px solid var(--primary); padding-left: 10px; }
+        .log-item span { color: var(--primary); }
+
+        /* LOADING & MISC */
+        .loading { text-align: center; padding: 30px; color: var(--primary); font-family: var(--font-m); font-size: 14px; }
+        .loading::after { content: '...'; animation: blink 1s infinite; }
+        
+        .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--primary); box-shadow: 0 0 10px var(--primary); animation: scan 3s linear infinite; opacity: 0.5; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo-area">
+            <div class="logo glitch" data-text="YAHDD SYSTEM">YAHDD SYSTEM</div>
+            <div class="subtitle">GOD TIER COMMAND CENTER v2.0</div>
+        </div>
+        <div class="header-right">
+            <div class="admin-badge">ROOT ACCESS</div>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Data</h3>
+            <p id="statTotal">0</p>
+        </div>
+        <div class="stat-card money">
+            <h3>Total Revenue</h3>
+            <p id="statUntung">0.00</p>
+        </div>
+        <div class="stat-card warning">
+            <h3>Pending</h3>
+            <p id="statPending">0</p>
+        </div>
+        <div class="stat-card info">
+            <h3>Success</h3>
+            <p id="statSuccess">0</p>
+        </div>
+    </div>
+
+    <!-- CHART MOCKUP -->
+    <div class="chart-container">
+        <div class="bar" style="height: 40%;"><div class="bar-label">Is</div></div>
+        <div class="bar" style="height: 60%;"><div class="bar-label">Se</div></div>
+        <div class="bar" style="height: 30%;"><div class="bar-label">Ra</div></div>
+        <div class="bar" style="height: 80%;"><div class="bar-label">Ka</div></div>
+        <div class="bar" style="height: 50%;"><div class="bar-label">Ju</div></div>
+        <div class="bar" style="height: 90%;"><div class="bar-label">Sa</div></div>
+        <div class="bar" style="height: 100%;"><div class="bar-label">Ah</div></div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="controls">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Cari Game / ID / Ref..." onkeyup="filterOrders()">
+        </div>
+        <div class="filter-btns">
+            <button class="filter-btn active" onclick="setFilter('all', this)">Semua</button>
+            <button class="filter-btn" onclick="setFilter('pending', this)">Pending</button>
+            <button class="filter-btn" onclick="setFilter('success', this)">Success</button>
+            <button class="filter-btn" onclick="setFilter('failed', this)">Failed</button>
+        </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="orders-title">Live Transaction Log</div>
+    <div class="order-list" id="ordersContainer">
+        <div class="loading">Establishing connection</div>
+    </div>
+
+    <!-- ADMIN LOG -->
+    <div class="admin-log">
+        <h3>> SYSTEM ADMIN LOG</h3>
+        <div id="logContainer"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "MASUKKAN_URL_SUPABASE_ANDA";
+        const SUPABASE_KEY = "MASUKKAN_ANON_KEY_SUPABASE_ANDA";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let allOrders = [];
+        let currentFilter = 'all';
+
+        // --- CARI & FILTER ---
+        function setFilter(type, btn) {
+            currentFilter = type;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterOrders();
+        }
+
+        function filterOrders() {
+            let searchTxt = document.getElementById('searchInput').value.toLowerCase();
+            let filtered = allOrders.filter(order => {
+                let matchSearch = order.game.toLowerCase().includes(searchTxt) || 
+                                  order.player_id.toLowerCase().includes(searchTxt) || 
+                                  order.ref_no.toLowerCase().includes(searchTxt);
+                let matchFilter = (currentFilter === 'all') || (order.status === currentFilter);
+                return matchSearch && matchFilter;
+            });
+            renderOrders(filtered);
+        }
+
+        // --- LOAD DATA ---
+        async function loadOrders() {
+            let container = document.getElementById('ordersContainer');
+            const { data: history, error } = await supabaseClient
+                .from('orders').select('*').order('created_at', { ascending: false });
+
+            if (error) { container.innerHTML = "<p style='color:red;'>CONNECTION FAILED.</p>"; return; }
+
+            allOrders = history || [];
+            filterOrders();
+            updateStats();
+        }
+
+        function updateStats() {
+            let totalPesanan = allOrders.length;
+            let totalUntung = 0;
+            let pendingCount = 0;
+            let successCount = 0;
+
+            allOrders.forEach(order => {
+                if (order.status !== 'failed') totalUntung += (order.harga / 100);
+                if (order.status === 'pending') pendingCount++;
+                if (order.status === 'success') successCount++;
+            });
+
+            document.getElementById('statTotal').innerText = totalPesanan;
+            document.getElementById('statUntung').innerText = totalUntung.toFixed(2);
+            document.getElementById('statPending').innerText = pendingCount;
+            document.getElementById('statSuccess').innerText = successCount;
+        }
+
+        // --- RENDER KAD ---
+        function renderOrders(orders) {
+            let container = document.getElementById('ordersContainer');
+            container.innerHTML = "";
+
+            if (orders.length === 0) {
+                container.innerHTML = `<div style="padding:30px; color:#666; text-align:center; border:1px dashed #333; font-family:var(--font-m);">TIADA DATA DITEMUI.</div>`;
+                return;
+            }
+
+            orders.forEach((order) => {
+                let status = order.status || 'pending';
+                let statusClass = status === 'pending' ? 'status-pending' : (status === 'success' ? 'status-success' : 'status-failed');
+                let statusText = status === 'pending' ? 'PENDING' : (status === 'success' ? 'SUCCESS' : 'FAILED');
+
+                let card = document.createElement('div');
+                card.className = `order-card ${status}`;
+                
+                let actionHTML = "";
+                if (status === 'pending') {
+                    actionHTML = `
+                        <div class="order-actions">
+                            <button class="btn-action btn-approve" onclick="prosesPesanan('${order.id}', '${order.game}', 'success')">EXECUTE</button>
+                            <button class="btn-action btn-reject" onclick="prosesPesanan('${order.id}', '${order.game}', 'failed')">ABORT</button>
+                            <button class="btn-action btn-edit" onclick="editHarga('${order.id}', ${order.harga})">EDIT</button>
+                        </div>
+                    `;
+                }
+
+                let tarikh = new Date(order.created_at).toLocaleString('ms-MY');
+
+                card.innerHTML = `
+                    <div class="scan-line"></div>
+                    <div class="status-badge ${statusClass}">${statusText}</div>
+                    <div class="order-header">
+                        <div class="order-game">> ${order.game}</div>
+                        <div class="order-time">${tarikh}</div>
+                    </div>
+                    <div class="order-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Player ID</span>
+                            <span class="detail-value">${order.player_id} <button class="copy-btn" onclick="salinText('${order.player_id}')">📋</button></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Package</span>
+                            <span class="detail-value">${order.pakej}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Ref No</span>
+                            <span class="detail-value">${order.ref_no} <button class="copy-btn" onclick="salinText('${order.ref_no}')">📋</button></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Amount</span>
