@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050000">
+    <meta name="description" content="YAHDD STORE - Platform Topup Game S-Tier.">
+    <title>YAHDD STORE | S-Tier Topup</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div class="bg-anim"></div>
+    <div id="pullRefresh">↻ Lepaskan untuk refresh</div>
+    <div id="bootScreen">INITIALIZING S-TIER SYSTEM...</div>
+
+    <nav id="navbar">
+        <div class="logo">YAHDD<span>STORE</span></div>
+        <div class="nav-btns">
+            <div class="clock" id="liveClock">00:00:00</div>
+            <button class="btn-nav" onclick="toggleSound()" id="soundBtn">🔊</button>
+            <!-- BUTANG LOGIN/LOGOUT -->
+            <button class="btn-nav" id="authBtn" onclick="handleAuthNav()">Login</button>
+            <button class="btn-nav" onclick="toggleHistory()">History</button>
+            <button class="btn-nav" onclick="window.location.href='track.html'">Track</button>
+        </div>
+    </nav>
+
+    <div id="historySidebar">
+        <h3 style="font-family:var(--font-h); color:var(--primary); margin-bottom:15px;">RIWAYAT PESANAN</h3>
+        <div id="historyList"></div>
+        <button class="btn-nav" style="width:100%; margin-top:20px;" onclick="toggleHistory()">Tutup</button>
+    </div>
+
+    <section class="hero">
+        <h1 class="glitch" data-text="S-Tier Topup">S-Tier <span>Topup</span></h1>
+        <p style="font-size: 12px; color: var(--muted); margin-bottom: 10px;">Platform Topup Masa Depan. <span id="liveVisitors" style="color:var(--primary); font-weight:bold;"></span></p>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Cari game... (Tekan '/' untuk cari)" onkeyup="cariGame()">
+        </div>
+
+        <div class="pills">
+            <div class="pill active" onclick="tapisPill('all', this)">Semua</div>
+            <div class="pill" onclick="tapisPill('populer', this)">Populer</div>
+            <div class="pill" onclick="tapisPill('murah', this)">Termurah</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="tapisPlatform('all', this)">Semua</button>
+            <button class="tab" onclick="tapisPlatform('mobile', this)">Mobile</button>
+            <button class="tab" onclick="tapisPlatform('pc', this)">PC</button>
+        </div>
+    </section>
+
+    <div class="scroll-container" id="scrollContainer">
+        <div class="scroll-section">
+            <div class="games-grid" id="gameGrid">
+                <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+            </div>
+        </div>
+        <div style="text-align:center; padding:20px; color:var(--muted); font-size:11px; margin-bottom:80px; border-top:1px solid #222;">
+            <p>Customer Service 24/7</p>
+            <a href="https://wa.me/601128727879" style="color:var(--primary); text-decoration:none; font-weight:bold; font-size:13px;">WhatsApp: +60 11-2872 7879</a>
+            <div style="margin: 10px 0; display:flex; justify-content:center; gap:15px;">
+                <span onclick="alert('Terma: Jualan muktamad.')" style="cursor:pointer; text-decoration:underline;">Terma</span>
+                <span onclick="alert('Privasi: Data dilindungi.')" style="cursor:pointer; text-decoration:underline;">Privasi</span>
+            </div>
+            <p>&copy; 2026 YAHDD STORE.</p>
+        </div>
+    </div>
+
+    <a href="https://wa.me/601128727879" class="wa-float" target="_blank">💬</a>
+    <div id="backToTop" onclick="document.getElementById('scrollContainer').scrollTo({top: 0, behavior: 'smooth'})">↑</div>
+
+    <div class="modal-overlay" id="topupModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="bunyiKlik(); tutupModal()">×</button>
+            <div class="modal-header"><h2 id="modalTitle">Topup</h2></div>
+            <div class="input-group">
+                <label>ID Pemain:</label>
+                <input type="text" id="playerId" placeholder="Masukkan ID / Zone ID" oninput="validateInput()">
+                <div id="inputError" style="color:var(--primary); font-size:10px; display:none; margin-top:5px;">ID terlalu pendek (min 4 aksara).</div>
+            </div>
+            <div class="input-group">
+                <label>Pilih Pakej:</label>
+                <div class="item-list" id="itemList"></div>
+            </div>
+            <div class="order-summary" id="orderSummary"></div>
+            <button class="btn-buy" id="btnBeli" onclick="bunyiKlik(); prosesBeli()" disabled>Pilih Pakej</button>
+        </div>
+    </div>
+
+    <div class="loading-screen" id="loadingScreen">
+        <div style="color: var(--primary); font-family: var(--font-h); font-size: 14px;">PROCESSING...</div>
+        <div class="progress-bar-container"><div class="progress-bar-fill" id="progressBarFill"></div></div>
+        <div id="progressText" style="color:var(--muted); font-size:12px; margin-top:10px;">0%</div>
+    </div>
+
+    <div class="modal-overlay" id="receiptModal" style="align-items: center;">
+        <div class="receipt-content">
+            <h2 style="font-family: var(--font-h); color: var(--success); margin-bottom: 5px;">✅ BERJAYA</h2>
+            <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Pesanan sedang diproses</p>
+            <div class="receipt-box">
+                <p><strong>Game:</strong> <span id="resGame"></span></p>
+                <p><strong>Pakej:</strong> <span id="resPakej"></span></p>
+                <p><strong>Jumlah:</strong> <span id="resHarga"></span></p>
+                <p><strong>Ref No:</strong> <span id="resRef" style="color:var(--primary); font-weight:bold;"></span></p>
+                <button class="btn-copy" onclick="salinRef()">📋 Salin Ref No</button>
+            </div>
+            <div style="font-size: 11px; color: #666; margin-bottom: 15px;">Sila buat pembayaran ke Maybank: 1234-5678-9012</div>
+            <button class="btn-buy" onclick="bunyiKlik(); tutupReceipt()" style="margin-bottom:10px; font-size: 13px;">Selesai</button>
+            <button class="btn-buy" onclick="shareReceipt()" style="background:#333; color:var(--primary); font-size: 13px;">Kongsi Resit</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
