@@ -1,5 +1,5 @@
-const SUPABASE_URL = "MASUKKAN_URL_SUPABASE_ANDA";
-const SUPABASE_KEY = "MASUKKAN_ANON_KEY_SUPABASE_ANDA";
+const SUPABASE_URL = "https://spxidzfqjgpifvutqjlx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_plobSMHs6jmvbWomZdh06w_JwTxVfql";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
 let currentRefNo = ""; let soundEnabled = true; let allGamesData = [];
